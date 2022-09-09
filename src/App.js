@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 import {
   Box,
+  Button,
   Tab,
   Tabs
 } from 'grommet';
@@ -31,6 +32,8 @@ import ConnectNFTSection from './components/ConnectNFTSection';
 import ConnectENSSection from './components/ConnectENSSection';
 import MyUNS from './components/MyUNS';
 
+import * as StreamR from "./Streamr";
+
 
 export default function App() {
 
@@ -50,6 +53,12 @@ export default function App() {
     getNftsFrom,
     getENSFrom
   } = useClient();
+
+  // Starting streamr Client
+  StreamR.createStreamRClient();
+
+  // Subscribe to client
+  StreamR.subscribeStreamR();
 
 
   const [profile, setProfile] = useState();
@@ -171,6 +180,7 @@ export default function App() {
   }, [netId, provider])
 
   useEffect(async () => {
+
     if (client && coinbase && netId && !user) {
       try {
         const ownedNfts = await getNftsFrom(coinbase, netId);
@@ -384,6 +394,9 @@ export default function App() {
               setProfile={setProfile}
             />
           }
+          <Button onClick={() => {
+            StreamR.publishMessageStreamr();
+          }} label="STEAMR TEST" />
           <Instructions />
         </Box>
       </Box>

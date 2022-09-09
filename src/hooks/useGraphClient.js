@@ -153,7 +153,7 @@ function useGraphClient() {
         query {
           account(id: "${address.toLowerCase()}") {
             domains(first: $first, skip: $skip, orderBy: $orderBy) {
-              labelName
+            labelName
               labelhash
               name
               isMigrated

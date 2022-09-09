@@ -49,6 +49,7 @@
     "react-scripts": "5.0.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
+    "streamr-client": "^6.0.9",
     "styled-components": "^5.3.3",
     "three": "^0.144.0",
     "three-spritetext": "^1.6.5",
