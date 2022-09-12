@@ -20,12 +20,13 @@ const ENS_ETH = 'https://api.thegraph.com/subgraphs/name/ensdomains/ens';
 const ENS_RINKEBY = 'https://api.thegraph.com/subgraphs/name/ensdomains/ensrinkeby';
 const ENS_GOERLI = 'https://api.thegraph.com/subgraphs/name/ensdomains/ensgoerli';
 
-
+const EMPTY_SPACE_GRAPH = "https://api.thegraph.com/subgraphs/name/henrique1837/empty-space"
 
 function useGraphClient() {
   const [client, setClient] = useState();
-
   const [ensClient, setENSClient] = useState();
+  const [gameClient, setGameClient] = useState();
+
   const initiateClient = (netId) => {
     //if(!client && netId){
     let newClient = new ApolloClient({
@@ -103,9 +104,13 @@ function useGraphClient() {
         cache: new InMemoryCache()
       });
     }
+    const newGameClient = new ApolloClient({
+      uri: EMPTY_SPACE_GRAPH,
+      cache: new InMemoryCache()
+    });
     setClient(newClient);
     setENSClient(newENSClient);
-    //}
+    setGameClient(newGameClient);
   }
   const getNftsFrom = async (address, netId) => {
     let tokensQuery = `
@@ -170,7 +175,26 @@ function useGraphClient() {
     });
     return (results);
   }
-  return ({ client, initiateClient, getNftsFrom, getENSFrom })
+
+  const getGameUris = async () => {
+    const query = `
+      query {
+        infos(first: 100) {
+          id
+          uri
+          x
+          z
+        }
+      }
+   `;
+    const results = await gameClient.query({
+      query: gql(query)
+    });
+    return (results);
+  }
+
+
+  return ({ client, initiateClient, getNftsFrom, getENSFrom, gameClient,getGameUris })
 }
 
 export default useGraphClient;

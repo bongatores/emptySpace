@@ -1,0 +1,6 @@
+type Info @entity {
+  id: ID!
+  uri: String!
+  x: Int!
+  z: Int!
+}

@@ -16,17 +16,15 @@ import { Core } from '@self.id/core'
 
 import { useAppContext } from './hooks/useAppState'
 
-
 const core = new Core({ ceramic: 'testnet-clay' })
 
 const resolution = Resolution.fromEthersProvider(new ethers.providers.JsonRpcProvider("https://rpc-mainnet.maticvigil.com"));
 
 
-export default function Game() {
+export default function Game(props) {
 
 
   const { state } = useAppContext();
-
   const ref = useRef({});
 
   useEffect(() => {
@@ -36,6 +34,10 @@ export default function Game() {
   useEffect(() => {
     ref.current = state
   }, [state]);
+  useEffect(() => {
+    ref.current.client = props.client;
+    ref.current.getGameUris = props.getGameUris;
+  },[props])
   let camera, scene, renderer, controls;
   const objects = [];
   let raycaster;
@@ -51,6 +53,7 @@ export default function Game() {
   const direction = new THREE.Vector3();
   const vertex = new THREE.Vector3();
   const color = new THREE.Color();
+  const infos = [];
 
   const onKeyDown = async function (event) {
 
@@ -77,6 +80,12 @@ export default function Game() {
         break;
 
       case 'KeyP':
+        camera.updateMatrixWorld();
+        const vector = camera.position.clone();
+        console.log(vector)
+        const x = (vector.x/10).toFixed(0);
+        const z = (vector.z/10).toFixed(0);
+        console.log(`Inserting data at ${x},${z}`)
         const coinbaseGame = ref.current.coinbase;
         const contract = ref.current.gameContract;
         const gameProvider = ref.current.provider;
@@ -93,7 +102,7 @@ export default function Game() {
             if (!string) return;
             const signer = gameProvider.getSigner();
             const gameContractWithSigner = contract.connect(signer);
-            const tx = await gameContractWithSigner.requestRandomWords(string);
+            const tx = await gameContractWithSigner.requestRandomWords(string,[x,z]);
             await tx.wait();
           } catch (err) {
             console.log(err)
@@ -147,150 +156,150 @@ export default function Game() {
   const checkUris = async () => {
     const contractInitiated = ref.current?.contractInitiated;
     const contract = ref.current?.gameContract;
+    const getGameUris = ref.current?.getGameUris;
 
-    if (contract && !contractInitiated) { //&& coinbase){
-      try {
-        /*
-        for(let i = 0; i < 1999;i++){
-          for(let j = 0;j<1999;j++){
-            const urigame = await gameContract.uri(i,j);
-            if(urigame){
-              ...
-              if(metadata.scenario){
-                const loader = new GLTFLoader().setPath(`https://nftstorage.link/ipfs/${metadata.scenario}/gltf/` );
-                loader.load( 'scene.gltf', function ( gltf ) {
-                  console.log(gltf)
-                  gltf.scene.position.set(i,1,j)
-                  gltf.scene.scale.set(gltf.scene.scale.x*1.2,gltf.scene.scale.y*1.2,gltf.scene.scale.z*1.2)
-                  scene.add( gltf.scene );
+    if (contract && !contractInitiated) {
+        const results = await getGameUris();
+        const infos = results.data.infos;
+        infos.map(async info => {
+
+                    //const uriGame = await contract.uri(info.x,info.z);
+                    const uriGame = info.uri
+                    let metadata;
+                    if(uriGame){
+                        console.log(`${uriGame} at ${info.x},${info.z}`)
+                        try{
+                          if (uriGame.startsWith("did:3")) {
+                            // Get profile info from ceramic.network
+                            const userProfile = await core.get('basicProfile', uriGame);
+                            if (!userProfile) {
+                              return
+                            }
+                            metadata = {
+                              name: userProfile.name ? userProfile.name : uriGame,
+                              description: userProfile.description,
+                              image: userProfile.image ?
+                                userProfile.image :
+                                makeBlockie(uriGame),
+                              external_url: userProfile.url,
+                              scenario: userProfile.scenario
+                            }
+                          }
+                          else if (uriGame.endsWith(".eth")) {
+
+                            const provider = ref.current.provider;
+
+                            let providerENS;
+                            if (provider.network.chainId != 4 && provider.network.chainId != 5) {
+                              // Use rinkeby default network for networks that do not have ENS support PROOF OF CONCEPT
+                              providerENS = new ethers.providers.JsonRpcProvider("https://rpc.ankr.com/eth_rinkeby")
+                            }
+                            else {
+                              providerENS = provider;
+                            }
 
 
-                } );
-                gameInfo.position.set(i,10,j)
+                            const resolver = await providerENS.getResolver(uriGame)
 
-              }
-            }
-          }
+                            const scenario = await resolver.getText("scenario");
+                            const avatar = await resolver.getText("avatar");
+
+                            const description = await resolver.getText("description");
+
+                            const url = await resolver.getText("url");
+
+                            metadata = {
+                              name: uriGame,
+                              description: description,
+                              image: avatar,
+                              external_url: url,
+                              scenario: scenario
+                            }
+
+                          }
+                          else if (uriGame.endsWith('.crypto')) {
+                            // UNS domain
+                            const records = await resolution.records(
+                              uriGame,
+                              [
+                                "profile.name.value",
+                                "profile.description.value",
+                                "ipfs.html.value",
+                                "profile.image.value",
+                                "emptyspace.gltf.value"
+                              ]
+                            );
+                            console.log(records)
+                            console.log(`Domain ${uriGame} ipfs hash is: ${records["ipfs.html.value"]}`);
+                            metadata = {
+                              name: records["profile.name.value"] ?
+                                    records["profile.name.value"] :
+                                    uriGame,
+                              description: records["profile.description.value"],
+                              image: records["profile.image.value"] ?
+                                     records["profile.image.value"] :
+                                     `https://metadata.unstoppabledomains.com/image-src/${uriGame}.svg`,
+                              external_url: records["ipfs.html.value"],
+                              scenario: records["emptyspace.gltf.value"]
+                            }
+                          } else {
+                            // Assumes it is nft metadata
+                            metadata = JSON.parse(await (await fetch(`https://nftstorage.link/ipfs/${uriGame.replace("ipfs://", "")}`)).text());
+                          }
+
+                          const gameInfo = new THREE.Group()
+                          const imgTexture = new THREE.TextureLoader().load(metadata.image.replace("ipfs://", "https://nftstorage.link/ipfs/"));
+                          const material = new THREE.SpriteMaterial({ map: imgTexture });
+                          const sprite = new THREE.Sprite(material);
+                          console.log(metadata)
+                          const name = new SpriteText(metadata.name, 8, "red");
+                          const description = new SpriteText(metadata.description, 3, "blue")
+                          const external_url = new SpriteText(metadata.external_url, 1, "green")
+                          sprite.scale.set(20, 20, 20)
+                          name.position.y = 40;
+                          description.position.y = 25;
+                          external_url.position.y = 12
+                          gameInfo.add(sprite)
+                          gameInfo.add(name)
+                          gameInfo.add(description)
+                          gameInfo.add(external_url)
+                          if (metadata.scenario) {
+                            const loader = new GLTFLoader().setPath(`https://nftstorage.link/ipfs/${metadata.scenario}/gltf/`);
+                            loader.load('scene.gltf', function (gltf) {
+                              console.log(gltf)
+                              gltf.scene.scale.set(gltf.scene.scale.x * 1.2, gltf.scene.scale.y * 1.2, gltf.scene.scale.z * 1.2)
+                              gltf.scene.position.set(info.x*10, 1, info.z*10)
+                              scene.add(gltf.scene);
+
+
+                            });
+                          }
+
+                          scene.add(gameInfo);
+                          if(metadata.scenario){
+                            const loader = new GLTFLoader().setPath(`https://nftstorage.link/ipfs/${metadata.scenario}/gltf/` );
+                            loader.load( 'scene.gltf', function ( gltf ) {
+                              console.log(gltf)
+                              gltf.scene.position.set(info.x*10,1,info.z*10)
+                              gltf.scene.scale.set(gltf.scene.scale.x*1.2,gltf.scene.scale.y*1.2,gltf.scene.scale.z*1.2)
+                              scene.add( gltf.scene );
+
+
+                            } );
+                          }
+                          gameInfo.position.set(info.x*10, 10, info.z*10)
+                          infos[info.id] = gameInfo;
+                        } catch(err){
+                          console.log(err)
+                        }
+                      }
+        })
+        for(const info of infos){
+
+
         }
-        */
-        const gameInfo = new THREE.Group()
-        const uriGame = await contract.uri();
-        let metadata;
-        if (uriGame.startsWith("did:3")) {
-          // Get profile info from ceramic.network
-          const userProfile = await core.get('basicProfile', uriGame);
-          if (!userProfile) {
-            return
-          }
-          metadata = {
-            name: userProfile.name ? userProfile.name : uriGame,
-            description: userProfile.description,
-            image: userProfile.image ?
-              userProfile.image :
-              makeBlockie(uriGame),
-            external_url: userProfile.url,
-            scenario: userProfile.scenario
-          }
-        }
-        else if (uriGame.endsWith(".eth")) {
-
-          const provider = ref.current.provider;
-
-          let providerENS;
-          if (provider.network.chainId != 4 && provider.network.chainId != 5) {
-            // Use rinkeby default network for networks that do not have ENS support PROOF OF CONCEPT
-            providerENS = new ethers.providers.JsonRpcProvider("https://rpc.ankr.com/eth_rinkeby")
-          }
-          else {
-            providerENS = provider;
-          }
-
-
-          const resolver = await providerENS.getResolver(uriGame)
-
-          const scenario = await resolver.getText("scenario");
-          const avatar = await resolver.getText("avatar");
-
-          const description = await resolver.getText("description");
-
-          const url = await resolver.getText("url");
-
-          metadata = {
-            name: uriGame,
-            description: description,
-            image: avatar,
-            external_url: url,
-            scenario: scenario
-          }
-
-        }
-
-
-        else if (uriGame.endsWith('.crypto')) {
-          // UNS domain
-          const records = await resolution.records(
-            uriGame,
-            [
-              "profile.name.value",
-              "profile.description.value",
-              "ipfs.html.value",
-              "profile.image.value",
-              "emptyspace.gltf.value"
-            ]
-          );
-          console.log(records)
-          console.log(`Domain ${uriGame} ipfs hash is: ${records["ipfs.html.value"]}`);
-          metadata = {
-            name: records["profile.name.value"] ?
-                  records["profile.name.value"] :
-                  uriGame,
-            description: records["profile.description.value"],
-            image: records["profile.image.value"] ?
-                   records["profile.image.value"] :
-                   `https://metadata.unstoppabledomains.com/image-src/${uriGame}.svg`,
-            external_url: records["ipfs.html.value"],
-            scenario: records["emptyspace.gltf.value"]
-          }
-        } else {
-          // Assumes it is nft metadata
-          metadata = JSON.parse(await (await fetch(`https://nftstorage.link/ipfs/${uriGame.replace("ipfs://", "")}`)).text());
-        }
-        const imgTexture = new THREE.TextureLoader().load(metadata.image.replace("ipfs://", "https://nftstorage.link/ipfs/"));
-        const material = new THREE.SpriteMaterial({ map: imgTexture });
-        const sprite = new THREE.Sprite(material);
-        console.log(metadata)
-        const name = new SpriteText(metadata.name, 20, "red");
-        const description = new SpriteText(metadata.description, 10, "blue")
-        const external_url = new SpriteText(metadata.external_url, 8, "green")
-        sprite.scale.set(20, 20, 20)
-        name.position.y = 60;
-        description.position.y = 30;
-        external_url.position.y = 20
-        gameInfo.add(sprite)
-        gameInfo.add(name)
-        gameInfo.add(description)
-        gameInfo.add(external_url)
-        if (metadata.scenario) {
-          const loader = new GLTFLoader().setPath(`https://nftstorage.link/ipfs/${metadata.scenario}/gltf/`);
-          loader.load('scene.gltf', function (gltf) {
-            console.log(gltf)
-            gltf.scene.position.set(0, 1, 0)
-            gltf.scene.scale.set(gltf.scene.scale.x * 1.2, gltf.scene.scale.y * 1.2, gltf.scene.scale.z * 1.2)
-            scene.add(gltf.scene);
-
-
-          });
-        }
-
-        gameInfo.position.set(0, 10, 0)
-        scene.add(gameInfo);
-
         const filter = contract.filters.Result();
         contract.on(filter, handleEvents)
-
-      } catch (err) {
-        console.log(err)
-      }
     }
     ref.current = {
       ...ref.current,
@@ -298,9 +307,9 @@ export default function Game() {
     }
   }
 
-  const handleEvents = (uri, requestId, result) => {
+  const handleEvents = (uri, number,requestId, result,x,z) => {
 
-    console.log(`Event: URI - ${uri} Result - ${result}`);
+    console.log(`Event: URI - ${uri} Result - ${result} - ${x},${z}`);
     if (result) {
       if (uri === ref.current?.uri) {
 
@@ -367,14 +376,15 @@ export default function Game() {
     const floorMaterial = new THREE.MeshBasicMaterial({ vertexColors: true });
 
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.set(1000,0,1000)
+
     scene.add(floor);
   }
 
   async function init() {
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.y = 2;
-
+    camera.position.set(1000,2,1000)
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
     scene.fog = new THREE.Fog(0xffffff, 0, 750);
@@ -438,7 +448,8 @@ export default function Game() {
   async function animate() {
 
     const contractInitiated = ref.current?.contractInitiated;
-    if (!contractInitiated) {
+    const client = ref.current?.client;
+    if (!contractInitiated && client) {
       await checkUris();
     }
     requestAnimationFrame(animate);

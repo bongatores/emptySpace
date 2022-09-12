@@ -1,0 +1,24 @@
+specVersion: 0.0.4
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: VRFv2Consumer
+    network: mumbai
+    source:
+      address: "0x6794ace7b14fc861d393c8963800117ec662c775"
+      abi: VRFv2Consumer
+      startBlock: 28002183
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Result
+      abis:
+        - name: VRFv2Consumer
+          file: VRFv2Consumer/abis/VRFv2Consumer.json
+      eventHandlers:
+        - event: Result(string,uint256,bool,uint8,uint8)
+          handler: handleResult
+      file: VRFv2Consumer/VRFv2Consumer.wasm

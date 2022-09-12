@@ -20,7 +20,7 @@ const useAppState = () => {
     user: null,
     gameContract: null,
     coinbase: null,
-    uri: null,
+    uri: null
   }
 
   // Manage the state using React.useState()
@@ -63,7 +63,7 @@ const getActions = (setState) => ({
   },
   setGameContract: (gameContract) => {
     setState((state) => ({ ...state, gameContract: gameContract }))
-  },
+  }
 })
 
 

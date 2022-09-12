@@ -53,9 +53,9 @@ export default function UseSelfIdSection(props){
     <AccordionPanel label="Edit Profile">
       <Box style={{wordBreak: 'break-word'}}>
         <Text>Name</Text>
-        <TextInput value={state.profile?.name} onChange={event => props.setName(event.target.value)}/>
+        <TextInput placeholder={state.profile?.name} onChange={event => props.setName(event.target.value)}/>
         <Text>Description</Text>
-        <TextInput  value={state.profile?.description} onChange={event => props.setDescription(event.target.value)}/>
+        <TextInput  placeholder={state.profile?.description} onChange={event => props.setDescription(event.target.value)}/>
         <Text>Image</Text>
         <FileInput
           name="Image"
@@ -70,13 +70,13 @@ export default function UseSelfIdSection(props){
           <Button secondary label="Upload Image to IPFS" size="xsmall" onClick={async () => {
             console.log(image);
             setUploading(true)
-            const storageRes = await NFTStorage.encodeBlob(new Blob(image));
+            const storageRes = await NFTStorage.encodeBlob(new Blob([image]));
             const cidNftStorageMetadata = await client.storeCar(storageRes.car);
             setUploading(true)
           }} />
         }
         <Text>URL</Text>
-        <TextInput  value={state.profile?.url} onChange={event => props.setUrl(event.target.value)}/>
+        <TextInput  placeholder={state.profile?.url} onChange={event => props.setUrl(event.target.value)}/>
         <Text>Scenario</Text>
         <FileInput
           name="Scenario"
@@ -93,7 +93,7 @@ export default function UseSelfIdSection(props){
         }
         <Button secondary label="Save Profile" onClick={async () => {
           setUploading(true);
-          console.log(props.img)
+          console.log(props)
           await state.self.merge('basicProfile',{
             name: props.name,
             description: props.description,
