@@ -49,6 +49,7 @@
     "react-scripts": "5.0.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
+    "streamr": "^0.0.8",
     "streamr-client": "^6.0.9",
     "styled-components": "^5.3.3",
     "three": "^0.144.0",
@@ -81,6 +82,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {}
+  }
 }

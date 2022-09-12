@@ -13,6 +13,7 @@
 /assets
 
 # misc
+.yarn*
 .DS_Store
 .env
 .env.local
@@ -24,6 +25,11 @@ npm-debug.log*
 yarn.lock*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json*
 
 /hardhat/out
 /hardhat/node_modules
+/hardhat/yarn.lock
+/hardhat/package-lock.json
+
+thegraph/node_modules

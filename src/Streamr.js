@@ -5,13 +5,13 @@ import { StreamrClient } from 'streamr-client';
 let _streamr;
 
 
-export function createStreamRClient() {
+export function createStreamRClient(provider) {
 
 
     const streamr = new StreamrClient({
         auth: {
             // who fking cares
-            privateKey: '606b37f399e43e2e534c9dd1e959c8191a3716ac5b29c156101e2d781897f037'
+            ethereum: window.ethereum
         }
     })
     _streamr = streamr;
@@ -27,33 +27,18 @@ export function createStreamRClient() {
 
 
 
-export async function subscribeStreamR() {
-
-
+export async function subscribeStreamR(id,handleMessages) {
 
     await _streamr.subscribe({
-        stream: '0x1a34a1120e43c4e00dceb56fd21e220773dfd744/emptySpace',
-    },
-        (message) => {
-            // This function will be called when new messages occur
-            console.log(JSON.stringify(message))
-        })
+        stream: id,
+    },handleMessages)
 
     console.log("streamr Subscription started");
 }
 
 
 
-export function publishMessageStreamr() {
-
-
-
-
-
+export function publishMessageStreamr(id,message) {
     // Publish messages to a stream
-    _streamr.publish('0x1a34a1120e43c4e00dceb56fd21e220773dfd744/emptySpace', {
-        hello: 'world',
-    })
-
-
+    _streamr.publish(id,message);
 }
