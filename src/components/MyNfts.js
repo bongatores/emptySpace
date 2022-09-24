@@ -18,8 +18,8 @@ export default function MyNfts(props) {
       {
         props.myOwnedNfts?.length > 0 &&
         <>
-          <Heading level="5">ERC721</Heading>
-          <Paragraph size="small">Select NFT to play</Paragraph>
+          <Heading level="5" className='titles'>ERC721</Heading>
+          <Paragraph size="small" className='titles'>Select NFT to play</Paragraph>
           <Box alignContent="center" align="center" pad="medium" direction="row-responsive" wrap={true}>
             {
               props.myOwnedNfts?.map(obj => {
@@ -41,10 +41,10 @@ export default function MyNfts(props) {
                   uri = tokenURI
                 }
                 return (
-                  <Card key={`${obj.address}_${obj.metadata.name}`} height="medium" width="small" background="light-1" align="center">
-                    <CardHeader pad="medium"><b>{obj.metadata.name}</b></CardHeader>
-                    <CardBody pad="small"><Image alignSelf="center" src={uri} width="150px" /></CardBody>
-                    <CardFooter pad={{ horizontal: "small" }} background="light-2" align="center" alignContent="center">
+                  <Card key={`${obj.address}_${obj.metadata.name}`} height="medium" width="small" background="light-1" align="center" className='ens_cards'>
+                    <CardHeader pad="medium" className='header'><b>{obj.metadata.name}</b></CardHeader>
+                    <CardBody pad="small" className='nft_image'><Image alignSelf="center" src={uri} width="150px"/></CardBody>
+                    <CardFooter pad={{ horizontal: "small" }} align="center" alignContent="center">
                       <Button secondary onClick={() => {
                         props.setMetadata(obj.uri)
                       }} size="small" label="Select" />
