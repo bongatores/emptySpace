@@ -109,6 +109,7 @@ h3{
 .ens_cards .header{
   padding-left: 5px;
   padding-right: 5px;
+  padding: 5px;
 }
 
 .input_box{
@@ -126,9 +127,13 @@ h3{
 .selected{
   word-break: break-word;
   background: white;
+  background-color: #FBAB7E;
+  background-image: linear-gradient(62deg, #FBAB7E 0%, #F7CE68 100%);
   padding: 10px;
   border-radius: 5px;
   text-align: center;
+  color: white;
+  box-shadow: 1px 1px 4px 2px #00000026;
 }
 
 .selected span{
@@ -136,4 +141,10 @@ h3{
   padding: 4px;
   border-radius: 5px;
   display: block;
+}
+
+.nft_image img{
+  height: 100%;
+  width: 300px;
+  object-fit: contain;
 }
